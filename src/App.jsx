@@ -9,7 +9,7 @@ const API_KEY = "sk-or-v1-9c523920cd6297d29e39e7c1a33b0eea23ab2f64b89d50b303c66a
 async function askClaude(messages) {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}`, "HTTP-Referer": "https://wb-ads-agent.vercel.app" },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}`, "HTTP-Referer": "https://wb-ads-agent.vercel.app", "X-Title": "WB Ads Intelligence" },
     body: JSON.stringify({ model: "anthropic/claude-sonnet-4-5", max_tokens: 2000, messages }),
   });
   const data = await res.json();
