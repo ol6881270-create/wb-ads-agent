@@ -50,10 +50,10 @@ export default function WBAgent() {
     for (const file of fileList) {
       try {
         const data = await file.arrayBuffer();
-        const wb = (await import("xlsx")).read(data);
+        const wb = XLSX.read(data);
         const sheets = {};
         wb.SheetNames.forEach((name) => {
-          sheets[name] = (await import("xlsx")).utils.sheet_to_json(wb.Sheets[name], { defval: "" });
+          sheets[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "" });
         });
         newData.push({ name: file.name, sheets });
       } catch (e) {}
