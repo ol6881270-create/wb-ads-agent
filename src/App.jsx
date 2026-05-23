@@ -1,20 +1,29 @@
 import { useState, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
+
 const COLORS = {
   bg: "#0a0e1a", surface: "#111827", card: "#1a2235", border: "#1e3a5f",
   accent: "#3b82f6", accentGlow: "rgba(59,130,246,0.15)", green: "#10b981",
   red: "#ef4444", yellow: "#f59e0b", text: "#e2e8f0", muted: "#64748b", wb: "#cb11ab",
 };
-const API_KEY = "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";
-async function askClaude(messages) {
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+
+const GEMINI_KEY = "AIzaSyCE5DN25PrYSNbDRuJuBXIbGWme89HKPWM";
+
+async function askGemini(prompt, images = []) {
+  const parts = [];
+  for (const img of images) {
+    parts.push({ inline_data: { mime_type: img.type, data: img.base64 } });
+  }
+  parts.push({ text: prompt });
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}`, "HTTP-Referer": "https://wb-ads-agent.vercel.app", "X-Title": "WB Ads Intelligence" },
-    body: JSON.stringify({ model: "anthropic/claude-sonnet-4-5", max_tokens: 2000, messages }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents: [{ parts }] }),
   });
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || "Ошибка получения ответа";
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "Ошибка получения ответа";
 }
+
 function parseExcel(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -30,6 +39,7 @@ function parseExcel(file) {
     reader.readAsBinaryString(file);
   });
 }
+
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -38,6 +48,7 @@ function toBase64(file) {
     reader.readAsDataURL(file);
   });
 }
+
 export default function WBAgent() {
   const [files, setFiles] = useState([]);
   const [parsedData, setParsedData] = useState([]);
@@ -49,6 +60,7 @@ export default function WBAgent() {
   const fileInputRef = useRef();
   const imageInputRef = useRef();
   const chatEndRef = useRef();
+
   const handleFiles = useCallback(async (fileList) => {
     setUploadLoading(true);
     const newFiles = []; const newData = [];
@@ -69,32 +81,33 @@ export default function WBAgent() {
     setParsedData((prev) => [...prev, ...newData]);
     setUploadLoading(false);
     if (newData.length > 0) {
-      setMessages((prev) => [...prev, { role: "assistant", text: `✅ Загружено ${newData.length} Excel файл(ов). Задай вопрос по данным!` }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: `✅ Загружено ${newData.length} Excel файл(ов). Задай вопрос!` }]);
     }
   }, []);
+
   const onDrop = useCallback((e) => {
     e.preventDefault();
     handleFiles(Array.from(e.dataTransfer.files));
   }, [handleFiles]);
+
   const buildContext = () => {
-    let ctx = "";
-    if (parsedData.length > 0) {
-      ctx += "Данные из Excel файлов:\n\n";
-      parsedData.forEach((file) => {
-        ctx += `=== ${file.name} ===\n`;
-        Object.entries(file.sheets).forEach(([sheetName, rows]) => {
-          ctx += `Лист: ${sheetName} (${rows.length} строк)\n`;
-          if (rows.length > 0) {
-            ctx += `Колонки: ${Object.keys(rows[0]).join(", ")}\n`;
-            ctx += JSON.stringify(rows.slice(0, 50)) + "\n";
-            if (rows.length > 50) ctx += `... и ещё ${rows.length - 50} строк\n`;
-          }
-          ctx += "\n";
-        });
+    if (parsedData.length === 0) return "";
+    let ctx = "Данные из Excel файлов:\n\n";
+    parsedData.forEach((file) => {
+      ctx += `=== ${file.name} ===\n`;
+      Object.entries(file.sheets).forEach(([sheetName, rows]) => {
+        ctx += `Лист: ${sheetName} (${rows.length} строк)\n`;
+        if (rows.length > 0) {
+          ctx += `Колонки: ${Object.keys(rows[0]).join(", ")}\n`;
+          ctx += JSON.stringify(rows.slice(0, 50)) + "\n";
+          if (rows.length > 50) ctx += `... и ещё ${rows.length - 50} строк\n`;
+        }
+        ctx += "\n";
       });
-    }
+    });
     return ctx;
   };
+
   const send = async (text) => {
     const msg = text || input.trim();
     if (!msg) return;
@@ -102,12 +115,9 @@ export default function WBAgent() {
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setLoading(true);
     const context = buildContext();
-    const systemText = `Ты эксперт по рекламе на Wildberries. Отвечай на русском языке. Будь конкретным, давай цифры и чёткие рекомендации.\n${context ? "ДАННЫЕ:\n" + context : "Данные не загружены."}`;
-    const userContent = images.length > 0
-      ? [ ...images.map((img) => ({ type: "image_url", image_url: { url: `data:${img.type};base64,${img.base64}` } })), { type: "text", text: systemText + "\n\nВопрос: " + msg } ]
-      : systemText + "\n\nВопрос: " + msg;
+    const prompt = `Ты эксперт по рекламе на Wildberries. Отвечай на русском языке. Давай конкретные рекомендации с цифрами.\n${context ? "ДАННЫЕ:\n" + context : "Данные не загружены."}\n\nВопрос: ${msg}`;
     try {
-      const answer = await askClaude([{ role: "user", content: userContent }]);
+      const answer = await askGemini(prompt, images);
       setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
     } catch (e) {
       setMessages((prev) => [...prev, { role: "assistant", text: "Ошибка соединения." }]);
@@ -115,7 +125,9 @@ export default function WBAgent() {
     setLoading(false);
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
+
   const quickActions = ["Проанализируй кампании", "Какие кластеры чистить?", "CTR по ключам", "Кампании СРБ", "Рекомендации по поставкам"];
+
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
       <div style={{ background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -130,7 +142,7 @@ export default function WBAgent() {
         <div style={{ display: "flex", gap: 12 }}>
           <div onDrop={onDrop} onDragOver={(e) => e.preventDefault()} onClick={() => fileInputRef.current?.click()}
             style={{ flex: 1, border: `2px dashed ${COLORS.border}`, borderRadius: 12, padding: 24, textAlign: "center", cursor: "pointer" }}>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,image/*" multiple style={{ display: "none" }} onChange={(e) => handleFiles(Array.from(e.target.files))} />
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" multiple style={{ display: "none" }} onChange={(e) => handleFiles(Array.from(e.target.files))} />
             {uploadLoading ? <div style={{ color: COLORS.accent }}>⏳ Загружаю...</div> : <><div style={{ fontSize: 28 }}>📊</div><div style={{ fontWeight: 600, fontSize: 14 }}>Excel файлы</div><div style={{ fontSize: 12, color: COLORS.muted }}>xlsx, xls</div></>}
           </div>
           <div onClick={() => imageInputRef.current?.click()}
