@@ -16,7 +16,7 @@ const COLORS = {
   wb: "#cb11ab",
 };
 
-const API_KEY = "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";
+const API_KEY = "OPENROUTER_API_KEY";
 
 async function askClaude(prompt) {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
