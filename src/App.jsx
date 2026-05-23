@@ -126,7 +126,7 @@ export default function WBAgent() {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const quickActions = ["Проанализируй кампании", "Какие кластеры чистить?", "CTR по ключам", "Кампании СРБ", "Рекомендации по поставкам"];
+  const quickActions = ["Анализ кампаний (показы, CTR, ДРР, заказы)", "Анализ кластеров — что чистить?", "Рекламный vs органический трафик", "Анализ скрина из Джема"];
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
