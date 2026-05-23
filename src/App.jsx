@@ -49,6 +49,46 @@ function toBase64(file) {
   });
 }
 
+function renderMessage(text) {
+  const lines = text.split("\n");
+  const elements = [];
+  let key = 0;
+
+  for (const line of lines) {
+    if (!line.trim()) { elements.push(<div key={key++} style={{ height: 8 }} />); continue; }
+
+    // Заголовки ##
+    if (line.startsWith("## ")) {
+      elements.push(<div key={key++} style={{ fontWeight: 700, fontSize: 16, color: COLORS.accent, marginTop: 16, marginBottom: 8, borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 6 }}>{line.replace("## ", "")}</div>);
+    }
+    // Заголовки #
+    else if (line.startsWith("# ")) {
+      elements.push(<div key={key++} style={{ fontWeight: 700, fontSize: 18, color: COLORS.wb, marginTop: 16, marginBottom: 8 }}>{line.replace("# ", "")}</div>);
+    }
+    // Жирный **текст**
+    else if (line.startsWith("**") && line.endsWith("**")) {
+      elements.push(<div key={key++} style={{ fontWeight: 700, color: COLORS.text, marginTop: 8 }}>{line.replace(/\*\*/g, "")}</div>);
+    }
+    // Пункты со значком ✅ 🔴 🟡
+    else if (line.match(/^[✅❌🔴🟡🟢⚠📊📈📉💡🎯]/)) {
+      elements.push(<div key={key++} style={{ padding: "6px 12px", margin: "4px 0", background: COLORS.card, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14 }}>{line}</div>);
+    }
+    // Пункты списка - или •
+    else if (line.match(/^[-•]\s/)) {
+      elements.push(<div key={key++} style={{ padding: "4px 8px 4px 16px", fontSize: 14, color: COLORS.text, borderLeft: `2px solid ${COLORS.accent}`, marginLeft: 8, marginTop: 3 }}>{line.replace(/^[-•]\s/, "")}</div>);
+    }
+    // Числа с точкой 1. 2. 3.
+    else if (line.match(/^\d+\.\s/)) {
+      elements.push(<div key={key++} style={{ padding: "4px 8px", fontSize: 14, color: COLORS.text, marginTop: 3 }}><span style={{ color: COLORS.accent, fontWeight: 700 }}>{line.match(/^\d+/)[0]}.</span> {line.replace(/^\d+\.\s/, "")}</div>);
+    }
+    // Обычный текст
+    else {
+      elements.push(<div key={key++} style={{ fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>{line}</div>);
+    }
+  }
+  return elements;
+}
+
 export default function WBAgent() {
   const [files, setFiles] = useState([]);
   const [parsedData, setParsedData] = useState([]);
@@ -81,7 +121,7 @@ export default function WBAgent() {
     setParsedData((prev) => [...prev, ...newData]);
     setUploadLoading(false);
     if (newData.length > 0) {
-      setMessages((prev) => [...prev, { role: "assistant", text: `✅ Загружено ${newData.length} Excel файл(ов). Задай вопрос!` }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: `✅ Загружено ${newData.length} файл(ов). Задай вопрос!` }]);
     }
   }, []);
 
@@ -115,7 +155,7 @@ export default function WBAgent() {
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setLoading(true);
     const context = buildContext();
-    const prompt = `Ты эксперт по рекламе на Wildberries. Отвечай на русском языке. Давай конкретные рекомендации с цифрами.\n${context ? "ДАННЫЕ:\n" + context : "Данные не загружены."}\n\nВопрос: ${msg}`;
+    const prompt = `Ты эксперт по рекламе на Wildberries. Отвечай на русском языке структурированно — используй ## для разделов, emoji для ключевых метрик (✅ хорошо, 🔴 проблема, 🟡 внимание, 💡 совет), списки через - для рекомендаций. Давай конкретные цифры и чёткие выводы.\n${context ? "ДАННЫЕ:\n" + context : "Данные не загружены."}\n\nВопрос: ${msg}`;
     try {
       const answer = await askGemini(prompt, images);
       setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
@@ -126,7 +166,12 @@ export default function WBAgent() {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const quickActions = ["Анализ кампаний (показы, CTR, ДРР, заказы)", "Анализ кластеров — что чистить?", "Рекламный vs органический трафик", "Анализ скрина из Джема"];
+  const quickActions = [
+    "Анализ кампаний (показы, CTR, ДРР, заказы)",
+    "Анализ кластеров — что чистить?",
+    "Рекламный vs органический трафик",
+    "Анализ скрина из Джема"
+  ];
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
@@ -159,8 +204,12 @@ export default function WBAgent() {
         )}
         <div style={{ flex: 1, background: COLORS.surface, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 16, minHeight: 300, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
           {messages.length === 0 ? <div style={{ margin: "auto", textAlign: "center", color: COLORS.muted }}><div style={{ fontSize: 40 }}>🤖</div><div>Загрузи Excel или скриншоты и задай вопрос</div></div>
-            : messages.map((m, i) => <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", background: m.role === "user" ? COLORS.accent : COLORS.card, border: m.role === "user" ? "none" : `1px solid ${COLORS.border}`, borderRadius: 12, padding: "10px 14px", maxWidth: "85%", whiteSpace: "pre-wrap", fontSize: 14 }}>{m.text}</div>)}
-          {loading && <div style={{ alignSelf: "flex-start", background: COLORS.card, borderRadius: 12, padding: "10px 14px", fontSize: 13, color: COLORS.muted }}>⏳ Анализирую...</div>}
+            : messages.map((m, i) => (
+              <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", background: m.role === "user" ? COLORS.accent : COLORS.card, border: m.role === "user" ? "none" : `1px solid ${COLORS.border}`, borderRadius: 12, padding: "12px 16px", maxWidth: "90%", fontSize: 14 }}>
+                {m.role === "assistant" ? renderMessage(m.text) : m.text}
+              </div>
+            ))}
+          {loading && <div style={{ alignSelf: "flex-start", background: COLORS.card, borderRadius: 12, padding: "10px 14px", fontSize: 13, color: COLORS.muted }}>⏳ Анализирую данные...</div>}
           <div ref={chatEndRef} />
         </div>
         <div style={{ display: "flex", gap: 10 }}>
