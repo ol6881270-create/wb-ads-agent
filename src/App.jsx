@@ -2,9 +2,9 @@ import { useState, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
 
 const C = {
-  bg: "#0f1117", surf: "#1a1d2e", card: "#1e2235", border: "#2a3050",
+  bg: "#f7f8fc", surf: "#ffffff", card: "#ffffff", border: "#e2e8f0",
   accent: "#38a169", green: "#00d97e", red: "#f44336", yellow: "#ffb300",
-  text: "#e8eaf6", muted: "#8892b0", wb: "#cb11ab",
+  text: "#1a202c", muted: "#718096", wb: "#cb11ab",
 };
 
 const GEMINI_KEY = "AIzaSyCE5DN25PrYSNbDRuJuBXIbGWme89HKPWM";
