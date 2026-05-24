@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 
 const C = {
   bg: "#0f1117", surf: "#1a1d2e", card: "#1e2235", border: "#2a3050",
-  accent: "#6c63ff", green: "#00d97e", red: "#f44336", yellow: "#ffb300",
+  accent: "#38a169", green: "#00d97e", red: "#f44336", yellow: "#ffb300",
   text: "#e8eaf6", muted: "#8892b0", wb: "#cb11ab",
 };
 
