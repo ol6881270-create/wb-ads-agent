@@ -164,7 +164,7 @@ export default function WBAgent() {
 
   const tabs = [
     { id: "upload", label: "📁 Загрузка" },
-    { id: "overview", label: "📊 Обзор" },
+    { id: "overview", label: "📊 Дашборд" },
     { id: "chat", label: "🤖 AI Чат" },
   ];
 
