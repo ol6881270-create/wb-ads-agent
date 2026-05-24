@@ -89,22 +89,23 @@ export default function WBAgent() {
   const chatEndRef = useRef();
 
   const extractMetrics = (data) => {
-    let totalSpend = 0, totalOrders = 0, totalViews = 0, totalClicks = 0;
+    let totalSpend = 0, totalOrders = 0, totalViews = 0, totalClicks = 0, totalDrr = 0, drrCount = 0;
     data.forEach(file => {
       Object.values(file.sheets).forEach(rows => {
         rows.forEach(row => {
-          const keys = Object.keys(row).map(k => k.toLowerCase());
-          keys.forEach((k, i) => {
-            const v = parseFloat(Object.values(row)[i]) || 0;
-            if (k.includes("затрат") || k.includes("расход") || k.includes("spend")) totalSpend += v;
-            if (k.includes("заказ") || k.includes("order")) totalOrders += v;
-            if (k.includes("показ") || k.includes("view") || k.includes("impress")) totalViews += v;
-            if (k.includes("клик") || k.includes("click")) totalClicks += v;
+          Object.entries(row).forEach(([k, v]) => {
+            const key = k.trim();
+            const val = parseFloat(String(v).replace(/\s/g, '').replace(',', '.')) || 0;
+            if (key === 'Затраты') totalSpend += val;
+            if (key === 'Заказы') totalOrders += val;
+            if (key === 'Показы') totalViews += val;
+            if (key === 'Клики' || key === 'Переходы') totalClicks += val;
+            if (key === 'ДРРз' && val > 0) { totalDrr += val; drrCount++; }
           });
         });
       });
     });
-    const drr = totalSpend && totalOrders ? ((totalSpend / (totalOrders * 1000)) * 100).toFixed(1) : null;
+    const drr = drrCount ? (totalDrr / drrCount).toFixed(1) : totalSpend && totalOrders ? ((totalSpend / (totalOrders * 1000)) * 100).toFixed(1) : null;
     const ctr = totalViews ? ((totalClicks / totalViews) * 100).toFixed(2) : null;
     setMetrics({ totalSpend, totalOrders, totalViews, totalClicks, drr, ctr });
   };
