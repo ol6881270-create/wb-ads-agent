@@ -29,7 +29,7 @@ function parseExcel(file) {
       try {
         const wb = XLSX.read(e.target.result, { type: "binary" });
         const sheets = {};
-        wb.SheetNames.forEach((n) => { sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: "" }); });
+        wb.SheetNames.forEach((n) => { sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: "", range: 1 }); });
         resolve(sheets);
       } catch (err) { reject(err); }
     };
