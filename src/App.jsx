@@ -60,16 +60,18 @@ function MetricCard({ label, value, sub, icon, color }) {
   );
 }
 
+function cleanLine(line) {
+  return line.replace(/\*\*(.*?)\*\*/g, '$1').replace(/^#+\s*/, '').replace(/^[-•]\s/, '');
+}
 function renderAI(text) {
   return text.split("\n").map((line, i) => {
-    if (!line.trim()) return <div key={i} style={{ height: 8 }} />;
-    if (line.startsWith("## ")) return <div key={i} style={{ fontWeight: 700, fontSize: 15, color: C.accent, marginTop: 16, marginBottom: 6, paddingBottom: 4, borderBottom: `1px solid ${C.border}` }}>{line.slice(3)}</div>;
-    if (line.startsWith("# ")) return <div key={i} style={{ fontWeight: 700, fontSize: 17, color: C.wb, marginTop: 12, marginBottom: 6 }}>{line.slice(2)}</div>;
-    if (line.match(/^[-•]\s/)) return <div key={i} style={{ display: "flex", gap: 8, padding: "3px 0", fontSize: 14 }}><span style={{ color: C.accent }}>▸</span><span>{line.slice(2)}</span></div>;
-    if (line.match(/^\d+\.\s/)) return <div key={i} style={{ padding: "3px 0 3px 16px", fontSize: 14 }}><span style={{ color: C.accent, fontWeight: 700 }}>{line.match(/^\d+/)[0]}.</span> {line.replace(/^\d+\.\s/, "")}</div>;
-    if (line.match(/^[✅❌🔴🟡🟢⚠️📊📈📉💡🎯🏆]/)) return <div key={i} style={{ background: C.surf, borderRadius: 8, padding: "8px 12px", margin: "4px 0", fontSize: 14, border: `1px solid ${C.border}` }}>{line}</div>;
-    if (line.startsWith("**") && line.endsWith("**")) return <div key={i} style={{ fontWeight: 700, marginTop: 8, fontSize: 14 }}>{line.replace(/\*\*/g, "")}</div>;
-    return <div key={i} style={{ fontSize: 14, lineHeight: 1.7, color: C.text }}>{line}</div>;
+    if (!line.trim()) return <div key={i} style={{ height: 6 }} />;
+    if (line.startsWith("### ") || line.startsWith("## ") || line.startsWith("# ")) return <div key={i} style={{ fontWeight: 700, fontSize: 15, color: C.accent, marginTop: 14, marginBottom: 5, paddingBottom: 4, borderBottom: `1px solid ${C.border}`, textAlign: "left" }}>{cleanLine(line)}</div>;
+    if (line.match(/^[-•]\s/)) return <div key={i} style={{ display: "flex", gap: 8, padding: "3px 0", fontSize: 14, textAlign: "left" }}><span style={{ color: C.accent, flexShrink: 0 }}>▸</span><span>{cleanLine(line)}</span></div>;
+    if (line.match(/^\d+\.\s/)) return <div key={i} style={{ padding: "3px 0 3px 16px", fontSize: 14, textAlign: "left" }}><span style={{ color: C.accent, fontWeight: 700 }}>{line.match(/^\d+/)[0]}.</span> {line.replace(/^\d+\.\s/, '').replace(/\*\*(.*?)\*\*/g, '$1')}</div>;
+    if (line.match(/^[✅❌🔴🟡🟢⚠️📊📈📉💡🎯🏆]/)) return <div key={i} style={{ background: C.surf, borderRadius: 8, padding: "8px 12px", margin: "4px 0", fontSize: 14, border: `1px solid ${C.border}`, textAlign: "left" }}>{line.replace(/\*\*(.*?)\*\*/g, '$1')}</div>;
+    if (line.match(/^\*\*.*\*\*$/)) return <div key={i} style={{ fontWeight: 700, marginTop: 8, fontSize: 14, textAlign: "left" }}>{cleanLine(line)}</div>;
+    return <div key={i} style={{ fontSize: 14, lineHeight: 1.7, color: C.text, textAlign: "left" }}>{line.replace(/\*\*(.*?)\*\*/g, '$1')}</div>;
   });
 }
 
